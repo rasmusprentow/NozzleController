@@ -10,32 +10,43 @@ using System.Windows.Forms;
 
 namespace SController
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
 
+        private BoardDrawer boardDrawer;
      
 
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
-            
-            BoardDrawer boardDrawer = new BoardDrawer();
 
-            this.pBox.Image = boardDrawer.DrawBoard();
+            boardDrawer = new BoardDrawer(pBox);
+            boardDrawer.SetOnRedraw( new UpScaledBoardDrawer(pBoxPrecise).RedrawCallback);
+
+            boardDrawer.DrawBoard();
 
 
             // Comport initializer
             string[] ports = System.IO.Ports.SerialPort.GetPortNames();
             this.portComboBox.DataSource = ports;
             this.portComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            ComPortManager.Instance.SetActiveComport(this.portComboBox.SelectedValue.ToString());
+            ComPortManager.Instance.ActivePort.PortName = this.portComboBox.SelectedValue.ToString();
 
             // Baudrate initializer
-            string[] baudrates = new[] { "9600" } ;
-            this.baudRateComboBox.DataSource = ports;
+            int[] baudrates = new[] { 9600 } ;
+            this.baudRateComboBox.DataSource = baudrates;
             this.baudRateComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            ComPortManager.Instance.SetBaudRate(this.baudRateComboBox.SelectedValue.ToString());
+            ComPortManager.Instance.ActivePort.BaudRate = int.Parse( this.baudRateComboBox.SelectedValue.ToString() );
 
+            _nozzle = new ComNozzleController();
+            _nozzle.SetExecutionListener((s) =>
+            {
+                this.Invoke( new MethodInvoker(() =>
+                {
+                    this.cmdLog.AppendText(s + "\n");
+                }));
+
+            });
         }
 
 
@@ -69,29 +80,30 @@ namespace SController
 
         private float largeDeltaX = 0f;
         private float largeDeltaY = 0f;
+        private ComNozzleController _nozzle;
 
 
         private void pBox_MouseMove(object sender, MouseEventArgs e)
         {
 
-            float mod = 1f;
-            var realX = pBox.Left + e.X + 1;
-            var realY = pBox.Top + e.Y + 1;
+        //    float mod = 1f;
+        //    var realX = pBox.Left + e.X + 1;
+        //    var realY = pBox.Top + e.Y + 1;
      
            // var realPoint = this.PointToClient(new Point(e.X, e.Y));
         
-            // SetCursor(pBox.Left + pBox.Width / 2, pBox.Top + pBox.Height / 2);
-            float deltaX = (lastPosX - realX) * (mod);
-            float deltaY = (lastPosY - realY) * (mod);
-            largeDeltaX += deltaX;
-            largeDeltaY += deltaY;
-
-            this.textBoxX.Text = e.X.ToString() + " : " + largeDeltaX + " : " + deltaX* 100;
-            this.textBoxY.Text = e.Y.ToString() + " : " + largeDeltaY + " : " + deltaY* 100;
-
-
-            lastPosX = realX;
-            lastPosY = realY;
+        //    // SetCursor(pBox.Left + pBox.Width / 2, pBox.Top + pBox.Height / 2);
+        //    float deltaX = (lastPosX - realX) * (mod);
+        //    float deltaY = (lastPosY - realY) * (mod);
+        //    largeDeltaX += deltaX;
+        //    largeDeltaY += deltaY;
+        //
+        //    this.textBoxX.Text = e.X.ToString() + " : " + largeDeltaX + " : " + deltaX* 100;
+        //    this.textBoxY.Text = e.Y.ToString() + " : " + largeDeltaY + " : " + deltaY* 100;
+        //
+        //
+        //    lastPosX = realX;
+        //    lastPosY = realY;
 
             //this.Cursor = new Cursor(Cursor.Current.Handle);
             
@@ -102,18 +114,13 @@ namespace SController
               //  SetCursor(lastPosX, lastPosY); 
               //  SetCursor(realX, realY);
                 //SetCursor(centerX + ((int)largeDeltaX), centerY + ((int)largeDeltaY));
-                Bitmap bmp = new Bitmap(this.pBox.Width, this.pBox.Height);
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    g.DrawLine(new Pen(Color.Black), e.X, 0, e.X, pBox.Height);
-                    g.DrawLine(new Pen(Color.Black), 0, e.Y, pBox.Width, e.Y);
-
-                }
-                pBox.Image = bmp;
+                this.boardDrawer.MarkerPosition = new Point(e.X, e.Y);
+                this._nozzle.SetDestination(new Point(e.X, e.Y));
+                this.textBoxX.Text = e.X.ToString();
+                this.textBoxY.Text = e.Y.ToString();
+                
             }
-
-          // this.textBoxX.Text = e.X.ToString() + " - " + largeDeltaX;
-           // this.textBoxY.Text = e.Y.ToString() + " - " + largeDeltaY;
+          
 
           
             
@@ -149,7 +156,12 @@ namespace SController
         private void portComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
 
-            ComPortManager.Instance.SetActiveComport(this.portComboBox.SelectedValue.ToString());
+            ComPortManager.Instance.ActivePort.PortName = (this.portComboBox.SelectedValue.ToString());
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+
         }
 
 

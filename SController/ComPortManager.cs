@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,16 +21,18 @@ namespace SController
 
 
         private string portName;
-        private string baudRate; 
+        private string baudRate;
+        private static Action<string> _onCmdExecuted;
 
-        public void SetActiveComport(string comport) {
-            this.portName = comport;
-        }
-
-        public void SetBaudRate(string baudRate)
+        public ComPortManager()
         {
-            this.baudRate = baudRate;
+            ActivePort = new SerialPort();
         }
 
+        public SerialPort ActivePort { get; set; }
+
+
+
+       
     }
 }

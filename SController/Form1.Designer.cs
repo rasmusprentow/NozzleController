@@ -138,6 +138,7 @@
             this.pBoxPrecise.Size = new System.Drawing.Size(350, 350);
             this.pBoxPrecise.TabIndex = 10;
             this.pBoxPrecise.TabStop = false;
+            this.pBoxPrecise.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pBoxPrecise_MouseMove);
             // 
             // panel1
             // 

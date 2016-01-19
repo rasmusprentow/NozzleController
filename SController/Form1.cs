@@ -13,18 +13,17 @@ namespace SController
     public partial class MainForm : Form
     {
 
-        private BoardDrawer boardDrawer;
-     
-
+        private  AbstractBoardDrawer boardDrawer;
+        private AbstractBoardDrawer preciseBoardDrawer;
+        private int _innerBoxSixe = 100;
         public MainForm()
         {
             InitializeComponent();
 
-            boardDrawer = new BoardDrawer(pBox);
-            boardDrawer.SetOnRedraw( new UpScaledBoardDrawer(pBoxPrecise).RedrawCallback);
-
+            boardDrawer = new BoardDrawer(pBox, new Size(_innerBoxSixe,_innerBoxSixe));
+            preciseBoardDrawer = new UpScaledBoardDrawer(pBoxPrecise);
             boardDrawer.DrawBoard();
-
+            preciseBoardDrawer.DrawBoard();
 
             // Comport initializer
             string[] ports = System.IO.Ports.SerialPort.GetPortNames();
@@ -63,10 +62,6 @@ namespace SController
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
-            SetCursor(pBox.Left + pBox.Width / 2, pBox.Top + pBox.Height / 2);
-            centerX = pBox.Left + pBox.Width / 2; 
-            centerY = pBox.Top + pBox.Height / 2;
-            largeDeltaX = largeDeltaY = 0f;
            
 //            SetCursor(pBox.Left + pBox.Width / 2, pBox.Top + pBox.Height / 2);
         }
@@ -86,26 +81,7 @@ namespace SController
         private void pBox_MouseMove(object sender, MouseEventArgs e)
         {
 
-        //    float mod = 1f;
-        //    var realX = pBox.Left + e.X + 1;
-        //    var realY = pBox.Top + e.Y + 1;
-     
-           // var realPoint = this.PointToClient(new Point(e.X, e.Y));
-        
-        //    // SetCursor(pBox.Left + pBox.Width / 2, pBox.Top + pBox.Height / 2);
-        //    float deltaX = (lastPosX - realX) * (mod);
-        //    float deltaY = (lastPosY - realY) * (mod);
-        //    largeDeltaX += deltaX;
-        //    largeDeltaY += deltaY;
-        //
-        //    this.textBoxX.Text = e.X.ToString() + " : " + largeDeltaX + " : " + deltaX* 100;
-        //    this.textBoxY.Text = e.Y.ToString() + " : " + largeDeltaY + " : " + deltaY* 100;
-        //
-        //
-        //    lastPosX = realX;
-        //    lastPosY = realY;
-
-            //this.Cursor = new Cursor(Cursor.Current.Handle);
+       
             
             if (Control.ModifierKeys == Keys.Shift)
             {
@@ -115,9 +91,8 @@ namespace SController
               //  SetCursor(realX, realY);
                 //SetCursor(centerX + ((int)largeDeltaX), centerY + ((int)largeDeltaY));
                 this.boardDrawer.MarkerPosition = new Point(e.X, e.Y);
-                this._nozzle.SetDestination(new Point(e.X, e.Y));
-                this.textBoxX.Text = e.X.ToString();
-                this.textBoxY.Text = e.Y.ToString();
+               // this._nozzle.SetDestination(new Point(e.X, e.Y));
+                this.UpdateCoordinates();
                 
             }
           
@@ -126,18 +101,60 @@ namespace SController
             
         }
 
-        private void SetCursor(int x, int y)
-        {
         
-            var point = this.PointToScreen(new Point(x, y));
-      
+        private void UpdateCoordinates()
+        {
+            var realSize = new Size(1000, 1000);
+            
+            
+            
+            
+            //var preciseBoxRealSize = new Size((int) ((realSize.Width /(float) this.pBox.Width) * this._innerBoxSixe), (int)((realSize.Height / (float)this.pBox.Height) * this._innerBoxSixe)) ;
+            var p = this.boardDrawer.MarkerPosition;
+            var precisePoint = this.preciseBoardDrawer.MarkerPosition;
 
-            SetCursorPos(point.X, point.Y);
+
+            var offSetPoint = ToRealPoint(precisePoint, new Size(_innerBoxSixe, _innerBoxSixe), this.pBoxPrecise);
+            var finalPosition = new Point(p.X + offSetPoint.X - _innerBoxSixe / 2, p.Y + offSetPoint.Y - _innerBoxSixe / 2);
+
+
+            var realPosition = ToRealPoint(finalPosition, realSize, this.pBox);
+
+
+            this.textBoxX.Text = realPosition.X.ToString();
+            this.textBoxY.Text = realPosition.Y.ToString();
+
+
+            this._nozzle.SetDestination(realPosition);
+          //  350*X = 100 
+          //      X = 1000/350
         }
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        static extern bool SetCursorPos(int x, int y);
+        private Point ToRealPoint(Point p, Size realSize, PictureBox pBox)
+        {
+            Point realPosition = new Point((int) (p.X*((double) realSize.Width/pBox.Width)),
+                (int) (p.Y*((double) realSize.Height/pBox.Height)));
+            return new Point(realPosition.X <= realSize.Width ? realPosition.X : realSize.Width, realPosition.Y <= realSize.Height ? realPosition.Y : realSize.Height);
+        }
 
+        private void pBoxPrecise_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (Control.ModifierKeys == Keys.Shift)
+            {
+                // SetCursor(pBox.Left + pBox.Width / 2, pBox.Top + pBox.Height / 2);
+                //   SetCursor((int)(realX - deltaX), (int)(realY - deltaY));
+                //  SetCursor(lastPosX, lastPosY); 
+                //  SetCursor(realX, realY);
+                //SetCursor(centerX + ((int)largeDeltaX), centerY + ((int)largeDeltaY));
+                this.preciseBoardDrawer.MarkerPosition = new Point(e.X, e.Y);
+                this.UpdateCoordinates();
+
+            }
+        }
+
+
+
+       
         private void label2_Click(object sender, EventArgs e)
         {
 
@@ -164,7 +181,7 @@ namespace SController
 
         }
 
-
+    
 
     }
 }

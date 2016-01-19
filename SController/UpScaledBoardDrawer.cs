@@ -10,26 +10,17 @@ namespace SController
 {
     class UpScaledBoardDrawer: AbstractBoardDrawer
     {
-
-
-        public Bitmap RedrawCallback(Bitmap original, Rectangle rect)
+        public UpScaledBoardDrawer(PictureBox pBox) : base(pBox)
         {
-            var cropped = original.Clone(rect, original.PixelFormat);
-
-            this.pBox.Image = new Bitmap(cropped, new Size(original.Width * 4, original.Height * 4));
-
-            return original;
+            
         }
 
-
-        public UpScaledBoardDrawer(PictureBox pBox)
-            : base(pBox)
+        protected override void _drawBoard(Graphics g)
         {
+            DrawGrid(g);
 
-
-
+            g.DrawLine(new Pen(Color.Black, 2), this.markerPosition.X, 0, this.markerPosition.X, Height);
+            g.DrawLine(new Pen(Color.Black, 2), 0, this.markerPosition.Y, Width, this.markerPosition.Y);
         }
-
-
     }
 }
